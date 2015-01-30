@@ -23,7 +23,6 @@
 //formula for color to greyscale conversion:
 
 //I = .299f * R + .587f * G + .114f * B
-
 //Notice the trailing f's on the numbers which indicate that they are 
 //single precision floating point constants and not double precision
 //constants.
