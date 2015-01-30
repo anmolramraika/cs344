@@ -26,12 +26,35 @@
 
 
 #include "utils.h"
+#include "reference.cpp"
+
 
 __global__
 void yourHisto(const unsigned int* const vals, //INPUT
-               unsigned int* const histo,      //OUPUT
-               int numVals)
+               unsigned int* const histo    //OUPUT
+               )
 {
+    int i = blockDim.x*blockIdx.x*64+threadIdx.x;
+    int tid = threadIdx.x;
+    extern __shared__ unsigned int s_bins[];
+
+    unsigned int temp;
+    for(int j =0; j < 4; ++j){
+      temp = tid * 4 + j;
+      s_bins[temp] = 0;
+    }
+    __syncthreads();
+    
+      for(int j = 0; j < 64; ++j){
+      temp = vals[i + 256*j];
+      atomicAdd(&s_bins[temp], 1);
+    }
+    __syncthreads();
+
+    for(int j = 0; j < 4; ++j){
+      temp = tid * 4 + j;
+      atomicAdd(&histo[temp],s_bins[temp]); 
+    }
   //TODO fill in this kernel to calculate the histogram
   //as quickly as possible
 
@@ -46,9 +69,14 @@ void computeHistogram(const unsigned int* const d_vals, //INPUT
                       const unsigned int numElems)
 {
   //TODO Launch the yourHisto kernel
-
-  //if you want to use/launch more than one kernel,
+    
+  yourHisto<<<numElems/(256*64),256,(numBins+225)*sizeof(unsigned int)>>>(d_vals,d_histo); 
+  
+    //if you want to use/launch more than one kernel,
   //feel free
-
   cudaDeviceSynchronize(); checkCudaErrors(cudaGetLastError());
+
+  /*delete[] h_vals;
+  delete[] h_histo;
+  delete[] your_histo;*/
 }
